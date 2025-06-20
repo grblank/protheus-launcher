@@ -5,25 +5,26 @@ const path = require('path');
 const fs = require('fs');
 const ini = require('ini');
 
-const iniPath = path.join(__dirname, 'protheus_launcher.ini');
+// Usa o diretório seguro do usuário para arquivos de configuração e log
+const userDataPath = app.getPath('userData');
+const iniPath = path.join(userDataPath, 'protheus_launcher.ini');
+const logPath = path.join(userDataPath, 'webagent_launcher.log');
 
-// Cria o arquivo INI com parâmetros padrão se não existir
-if (!fs.existsSync(iniPath)) {
-    const defaultConfig = `
-[Protheus]
-url=https://api.transjoi.com.br:10443/webapp/
-programa=
-ambiente=
-`;
-    try {
-        fs.writeFileSync(iniPath, defaultConfig.trim());
-    } catch (err) {
-        console.error('Erro ao criar protheus_launcher.ini:', err);
-    }
+// Função para ler argumentos da linha de comando
+function getArgsFromCommandLine() {
+    const args = process.argv.slice(1); // Ignora o executável
+    const result = {};
+    args.forEach(arg => {
+        if (arg.startsWith('-p=')) {
+            result.programa = arg.substring(3);
+        } else if (arg.startsWith('-e=')) {
+            result.ambiente = arg.substring(3);
+        }
+    });
+    return result;
 }
 
 function readConfig() {
-    const logPath = path.join(__dirname, 'webagent_launcher.log');
     function logDebug(msg) {
         const line = `[${new Date().toISOString()}] DEBUG: ${msg}\n`;
         try { fs.appendFileSync(logPath, line, { flag: 'a', encoding: 'utf-8' }); } catch (err) { }
@@ -32,24 +33,28 @@ function readConfig() {
         logDebug('Arquivo de configuração INI não encontrado, usando padrão.');
         return {
             url: 'https://api.transjoi.com.br:10443/webapp/',
-            programa: '',
-            ambiente: ''
+            programa: 'SIGAMDI',
+            ambiente: 'producao'
         };
     }
     try {
         const config = ini.parse(fs.readFileSync(iniPath, 'utf-8'));
-
-        return {
+        let resultConfig = {
             url: config.Protheus?.url || 'https://api.transjoi.com.br:10443/webapp/',
             programa: config.Protheus?.programa || '',
             ambiente: config.Protheus?.ambiente || ''
         };
+        // Sobrescreve com argumentos da linha de comando, se existirem
+        const cliArgs = getArgsFromCommandLine();
+        if (cliArgs.programa) resultConfig.programa = cliArgs.programa;
+        if (cliArgs.ambiente) resultConfig.ambiente = cliArgs.ambiente;
+        return resultConfig;
     } catch (e) {
         logDebug('Erro ao ler arquivo de configuração INI: ' + e.message);
         return {
             url: 'https://api.transjoi.com.br:10443/webapp/',
-            programa: '',
-            ambiente: ''
+            programa: 'SIGAMDI',
+            ambiente: 'producao'
         };
     }
 }
@@ -307,10 +312,28 @@ async function checkAndInstallWebAgent() {
 }
 
 app.whenReady().then(async () => {
+    // Garante a criação do INI ao iniciar o app
     try {
-        fs.appendFileSync(path.join(__dirname, 'webagent_launcher.log'), `[${new Date().toISOString()}] app.whenReady iniciado\n`, { flag: 'a', encoding: 'utf-8' });
+        if (!fs.existsSync(iniPath)) {
+            const defaultConfig = `
+[Protheus]
+url=https://api.transjoi.com.br:10443/webapp/
+programa=SIGAMDI
+ambiente=producao
+`;
+            fs.writeFileSync(iniPath, defaultConfig.trim());
+        }
     } catch (err) {
-        console.error('Erro ao gravar log de debug:', err);
+        console.error('Erro ao criar protheus_launcher.ini:', err);
+    }
+    // Garante a criação do arquivo de log
+    try {
+        if (!fs.existsSync(logPath)) {
+            fs.writeFileSync(logPath, `[${new Date().toISOString()}] Log criado\n`, { flag: 'a', encoding: 'utf-8' });
+        }
+        fs.appendFileSync(logPath, `[${new Date().toISOString()}] App iniciado\n`, { flag: 'a', encoding: 'utf-8' });
+    } catch (err) {
+        console.error('Erro ao criar webagent_launcher.log:', err);
     }
     const win = createWindow();
     const agentOk = await checkAndInstallWebAgent();
