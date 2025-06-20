@@ -8,3 +8,8 @@
 [2025-06-20T13:28:54.481Z] DEBUG: Arquivo de configuração lido. url: https://api.transjoi.com.br:10443/webapp/, programa: SIGAMDI, ambiente: producao
 [2025-06-20T13:28:54.485Z] DEBUG: Arquivo de configuração lido. url: https://api.transjoi.com.br:10443/webapp/, programa: SIGAMDI, ambiente: producao
 [2025-06-20T13:28:54.486Z] DEBUG: URL carregada: https://api.transjoi.com.br:10443/webapp/?P=SIGAMDI&E=producao
+[2025-06-20T14:01:24.177Z] app.whenReady iniciado
+[2025-06-20T14:01:24.182Z] DEBUG: Arquivo de configura��o lido. url: https://api.transjoi.com.br:10443/webapp/, programa: SIGAMDI, ambiente: producao
+[2025-06-20T14:01:24.458Z] DEBUG: Arquivo de configura��o lido. url: https://api.transjoi.com.br:10443/webapp/, programa: SIGAMDI, ambiente: producao
+[2025-06-20T14:01:24.460Z] DEBUG: Arquivo de configura��o lido. url: https://api.transjoi.com.br:10443/webapp/, programa: SIGAMDI, ambiente: producao
+[2025-06-20T14:01:24.460Z] DEBUG: URL carregada: https://api.transjoi.com.br:10443/webapp/?P=SIGAMDI&E=producao

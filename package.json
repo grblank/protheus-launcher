@@ -16,7 +16,8 @@
   },
   "devDependencies": {
     "electron": "^36.4.0",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "pkg": "^5.8.1"
   },
   "build": {
     "appId": "com.suaempresa.protheuslauncher",
@@ -26,7 +27,9 @@
     ],
     "win": {
       "icon": "protheus.png",
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "directories": {
       "output": "dist"

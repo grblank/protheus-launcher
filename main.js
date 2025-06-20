@@ -7,37 +7,49 @@ const ini = require('ini');
 
 const iniPath = path.join(__dirname, 'protheus_launcher.ini');
 
+// Cria o arquivo INI com parâmetros padrão se não existir
+if (!fs.existsSync(iniPath)) {
+    const defaultConfig = `
+[Protheus]
+url=https://api.transjoi.com.br:10443/webapp/
+programa=
+ambiente=
+`;
+    try {
+        fs.writeFileSync(iniPath, defaultConfig.trim());
+    } catch (err) {
+        console.error('Erro ao criar protheus_launcher.ini:', err);
+    }
+}
+
 function readConfig() {
     const logPath = path.join(__dirname, 'webagent_launcher.log');
     function logDebug(msg) {
         const line = `[${new Date().toISOString()}] DEBUG: ${msg}\n`;
-        try { fs.appendFileSync(logPath, line, { flag: 'a' }); } catch (err) {}
+        try { fs.appendFileSync(logPath, line, { flag: 'a' }); } catch (err) { }
     }
     if (!fs.existsSync(iniPath)) {
-        logDebug('Arquivo de configuraÃ§Ã£o INI nÃ£o encontrado, usando padrÃ£o.');
+        logDebug('Arquivo de configuração INI não encontrado, usando padrão.');
         return {
             url: 'https://api.transjoi.com.br:10443/webapp/',
             programa: '',
-            ambiente: '',
-            msiPath: '\\quick.transjoi.com.br\\webagent\\web-agent-1.0.17-windows-x64-release.setup.exe'
+            ambiente: ''
         };
     }
     try {
         const config = ini.parse(fs.readFileSync(iniPath, 'utf-8'));
-        logDebug(`Arquivo de configuraÃ§Ã£o lido. url: ${config.Protheus?.url}, programa: ${config.Protheus?.programa}, ambiente: ${config.Protheus?.ambiente}`);
+        logDebug(`Arquivo de configuração lido. url: ${config.Protheus?.url}, programa: ${config.Protheus?.programa}, ambiente: ${config.Protheus?.ambiente}`);
         return {
             url: config.Protheus?.url || 'https://api.transjoi.com.br:10443/webapp/',
             programa: config.Protheus?.programa || '',
-            ambiente: config.Protheus?.ambiente || '',
-            msiPath: config.Protheus?.msiPath || '\\quick.transjoi.com.br\\webagent\\web-agent-1.0.17-windows-x64-release.setup.exe'
+            ambiente: config.Protheus?.ambiente || ''
         };
     } catch (e) {
-        logDebug('Erro ao ler arquivo de configuraÃ§Ã£o INI: ' + e.message);
+        logDebug('Erro ao ler arquivo de configuração INI: ' + e.message);
         return {
             url: 'https://api.transjoi.com.br:10443/webapp/',
             programa: '',
-            ambiente: '',
-            msiPath: '\\quick.transjoi.com.br\\webagent\\web-agent-1.0.17-windows-x64-release.setup.exe'
+            ambiente: ''
         };
     }
 }
@@ -202,7 +214,7 @@ async function checkAndInstallWebAgent() {
         const line = `[${new Date().toISOString()}] INFO: ${msg}\n`;
         try {
             fs.appendFileSync(logPath, line, { flag: 'a' });
-        } catch (err) {}
+        } catch (err) { }
     }
     try {
         const https = require('https');
@@ -312,7 +324,7 @@ app.whenReady().then(async () => {
     try {
         const logPath = path.join(__dirname, 'webagent_launcher.log');
         fs.appendFileSync(logPath, `[${new Date().toISOString()}] DEBUG: URL carregada: ${url}\n`, { flag: 'a' });
-    } catch (e) {}
+    } catch (e) { }
     const { session } = win.webContents;
     try {
         // Limpa cookies
