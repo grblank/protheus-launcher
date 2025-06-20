@@ -1,0 +1,10 @@
+[2025-06-20T13:23:26.549Z] app.whenReady iniciado
+[2025-06-20T13:23:26.551Z] DEBUG: Arquivo de configuração INI não encontrado, usando padrão.
+[2025-06-20T13:23:26.753Z] DEBUG: Arquivo de configuração INI não encontrado, usando padrão.
+[2025-06-20T13:23:26.755Z] DEBUG: Arquivo de configuração INI não encontrado, usando padrão.
+[2025-06-20T13:23:26.755Z] DEBUG: URL carregada: https://api.transjoi.com.br:10443/webapp/
+[2025-06-20T13:28:54.263Z] app.whenReady iniciado
+[2025-06-20T13:28:54.266Z] DEBUG: Arquivo de configuração lido. url: https://api.transjoi.com.br:10443/webapp/, programa: SIGAMDI, ambiente: producao
+[2025-06-20T13:28:54.481Z] DEBUG: Arquivo de configuração lido. url: https://api.transjoi.com.br:10443/webapp/, programa: SIGAMDI, ambiente: producao
+[2025-06-20T13:28:54.485Z] DEBUG: Arquivo de configuração lido. url: https://api.transjoi.com.br:10443/webapp/, programa: SIGAMDI, ambiente: producao
+[2025-06-20T13:28:54.486Z] DEBUG: URL carregada: https://api.transjoi.com.br:10443/webapp/?P=SIGAMDI&E=producao
