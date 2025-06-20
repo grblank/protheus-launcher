@@ -14,7 +14,6 @@ O **Protheus Launcher** é uma aplicação desktop desenvolvida em Electron para fa
 - **Web Agent Automático**: Busca a versão e URL do instalador do Web Agent automaticamente via `webagent.json` remoto. Instala e valida a versão correta, removendo instalações antigas se necessário.
 - **Loader Moderno**: Exibe tela de carregamento customizada enquanto verifica o ambiente.
 - **Tratamento de Erros**: Exibe tela de erro customizada em caso de falhas críticas (ex: download, instalação, leitura de arquivos).
-- **Logs Detalhados**: Todas as ações e erros relevantes são registrados em `webagent_launcher.log` dentro do diretório da instância.
 
 ## Estrutura do Projeto
 
@@ -23,14 +22,11 @@ O **Protheus Launcher** é uma aplicação desktop desenvolvida em Electron para fa
   - Garantir que o Web Agent esteja instalado e atualizado, baixando e instalando automaticamente se necessário.
   - Criar a janela principal do navegador, exibindo um loader enquanto verifica o ambiente.
   - Carregar a URL do Protheus com parâmetros personalizados.
-  - Gerenciar logs de execução e erros em `webagent_launcher.log`.
   - Exibir tela de erro customizada em caso de falhas.
 
 - `package.json`: Configurações do projeto Node.js/Electron, dependências e scripts de build/start.
 - `protheus_launcher.ini`: Arquivo de configuração INI editável, onde se define a URL do Protheus, programa e ambiente.
-- `protheus.png`: Ícone da aplicação.
-- `quick-loading.gif` e `quick-loading.svg`: Imagens de loading exibidas durante a verificação do ambiente.
-- `webagent_launcher.log`: Arquivo de log gerado automaticamente pela aplicação (um por instância).
+- `quick_launcher.jpg`: Imagem de cabeçalho para o README.
 
 ## Funcionamento
 
@@ -39,8 +35,7 @@ O **Protheus Launcher** é uma aplicação desktop desenvolvida em Electron para fa
 3. **Verificação do Web Agent**: Antes de abrir o Protheus, verifica se o Web Agent está instalado e atualizado. Busca a versão/URL mais recente via web e instala automaticamente se necessário.
 4. **Loader**: Exibe uma tela de carregamento enquanto realiza as verificações.
 5. **Abertura do Protheus**: Carrega a URL configurada do Protheus, incluindo parâmetros de programa e ambiente, se definidos.
-6. **Logs**: Todas as ações relevantes e erros são registrados em `webagent_launcher.log`.
-7. **Tratamento de Erros**: Em caso de falha crítica, exibe uma tela de erro amigável ao usuário.
+6. **Tratamento de Erros**: Em caso de falha crítica, exibe uma tela de erro amigável ao usuário.
 
 ## Configuração
 
@@ -57,7 +52,22 @@ ambiente=producao
 - **programa**: Código do programa a ser aberto (opcional).
 - **ambiente**: Ambiente do Protheus (opcional).
 
-> **Nota:** O caminho do instalador do Web Agent agora é obtido automaticamente via internet. O campo `msiPath` no INI é opcional e só será usado se não houver URL remota.
+## Exemplos de Atalhos com Parâmetros
+
+Você pode criar atalhos personalizados para abrir o launcher já direcionando para um programa ou ambiente específico. Exemplos:
+
+- Atalho para um programa específico:
+  ```
+  "C:\Caminho\Protheus Launcher.exe" -p=SIGAFIN
+  ```
+- Atalho para um ambiente específico:
+  ```
+  "C:\Caminho\Protheus Launcher.exe" -e=homologacao
+  ```
+- Atalho para programa e ambiente:
+  ```
+  "C:\Caminho\Protheus Launcher.exe" -p=SIGAFIN -e=homologacao
+  ```
 
 ## Como Executar
 
@@ -69,9 +79,6 @@ ambiente=producao
    ```
    npm start
    ```
-3. Parâmetros opcionais:
-   - `-p=PROGRAMA` para definir o programa.
-   - `-e=AMBIENTE` para definir o ambiente.
 
 ## Build
 
@@ -87,6 +94,5 @@ O instalador será gerado na pasta `dist/`.
 
 ## Observações
 - O launcher automatiza a instalação e atualização do Web Agent, essencial para o funcionamento do Protheus Web.
-- Logs detalhados são gerados em `webagent_launcher.log` para facilitar o suporte e troubleshooting.
 - O launcher pode ser executado em múltiplas instâncias simultaneamente, cada uma com seu próprio ambiente isolado.
 - Em caso de erro crítico, uma tela de erro será exibida ao usuário.
