@@ -1,4 +1,4 @@
-# Protheus Launcher
+# Quick™ Protheus Launcher
 
 ![Header](quick_launcher.jpg)
 
