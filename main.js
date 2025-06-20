@@ -4,7 +4,7 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const ini = require('ini');
-const instanceId = process.argv.find(arg => arg.startsWith('--instance=')) || `--instance=${Date.now()}_${Math.floor(Math.random()*10000)}`;
+const instanceId = process.argv.find(arg => arg.startsWith('--instance=')) || `--instance=${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 const customUserDataPath = path.join(app.getPath('appData'), 'protheus-launcher', instanceId.replace('--instance=', ''));
 app.setPath('userData', customUserDataPath);
 
@@ -130,7 +130,6 @@ function createWindow() {
         show: false,
         autoHideMenuBar: true,
         icon: path.join(__dirname, 'protheus.png'),
-        resizable: false, // Impede redimensionamento
         webPreferences: {
             nodeIntegration: true, // necessário para injetar loader
             contextIsolation: false,
