@@ -130,6 +130,7 @@ function createWindow() {
         show: false,
         autoHideMenuBar: true,
         icon: path.join(__dirname, 'protheus.png'),
+        resizable: false, // Impede redimensionamento
         webPreferences: {
             nodeIntegration: true, // necessário para injetar loader
             contextIsolation: false,
