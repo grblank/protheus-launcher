@@ -1,5 +1,7 @@
 # Protheus Launcher
 
+![Header](quick_launcher.jpg)
+
 ## Visão Geral
 
 O **Protheus Launcher** é uma aplicação desktop desenvolvida em Electron para facilitar o acesso ao sistema Protheus via navegador, garantindo que o Web Agent esteja instalado e atualizado no computador do usuário. Ele permite configuração personalizada via arquivo INI e realiza automações para garantir o funcionamento correto do ambiente Protheus Web.
