@@ -7,7 +7,7 @@ const ini = require('ini');
 
 const iniPath = path.join(__dirname, 'protheus_launcher.ini');
 
-// Cria o arquivo INI com par‚metros padr„o se n„o existir
+// Cria o arquivo INI com par√¢metros padr√£o se n√£o existir
 if (!fs.existsSync(iniPath)) {
     const defaultConfig = `
 [Protheus]
@@ -26,10 +26,10 @@ function readConfig() {
     const logPath = path.join(__dirname, 'webagent_launcher.log');
     function logDebug(msg) {
         const line = `[${new Date().toISOString()}] DEBUG: ${msg}\n`;
-        try { fs.appendFileSync(logPath, line, { flag: 'a' }); } catch (err) { }
+        try { fs.appendFileSync(logPath, line, { flag: 'a', encoding: 'utf-8' }); } catch (err) { }
     }
     if (!fs.existsSync(iniPath)) {
-        logDebug('Arquivo de configuraÁ„o INI n„o encontrado, usando padr„o.');
+        logDebug('Arquivo de configura√ß√£o INI n√£o encontrado, usando padr√£o.');
         return {
             url: 'https://api.transjoi.com.br:10443/webapp/',
             programa: '',
@@ -38,14 +38,14 @@ function readConfig() {
     }
     try {
         const config = ini.parse(fs.readFileSync(iniPath, 'utf-8'));
-        logDebug(`Arquivo de configuraÁ„o lido. url: ${config.Protheus?.url}, programa: ${config.Protheus?.programa}, ambiente: ${config.Protheus?.ambiente}`);
+
         return {
             url: config.Protheus?.url || 'https://api.transjoi.com.br:10443/webapp/',
             programa: config.Protheus?.programa || '',
             ambiente: config.Protheus?.ambiente || ''
         };
     } catch (e) {
-        logDebug('Erro ao ler arquivo de configuraÁ„o INI: ' + e.message);
+        logDebug('Erro ao ler arquivo de configura√ß√£o INI: ' + e.message);
         return {
             url: 'https://api.transjoi.com.br:10443/webapp/',
             programa: '',
@@ -213,7 +213,7 @@ async function checkAndInstallWebAgent() {
     function logInfo(msg) {
         const line = `[${new Date().toISOString()}] INFO: ${msg}\n`;
         try {
-            fs.appendFileSync(logPath, line, { flag: 'a' });
+            fs.appendFileSync(logPath, line, { flag: 'a', encoding: 'utf-8' });
         } catch (err) { }
     }
     try {
@@ -308,7 +308,7 @@ async function checkAndInstallWebAgent() {
 
 app.whenReady().then(async () => {
     try {
-        fs.appendFileSync(path.join(__dirname, 'webagent_launcher.log'), `[${new Date().toISOString()}] app.whenReady iniciado\n`, { flag: 'a' });
+        fs.appendFileSync(path.join(__dirname, 'webagent_launcher.log'), `[${new Date().toISOString()}] app.whenReady iniciado\n`, { flag: 'a', encoding: 'utf-8' });
     } catch (err) {
         console.error('Erro ao gravar log de debug:', err);
     }
@@ -323,7 +323,7 @@ app.whenReady().then(async () => {
     // Loga a URL final que ser√° carregada
     try {
         const logPath = path.join(__dirname, 'webagent_launcher.log');
-        fs.appendFileSync(logPath, `[${new Date().toISOString()}] DEBUG: URL carregada: ${url}\n`, { flag: 'a' });
+        fs.appendFileSync(logPath, `[${new Date().toISOString()}] DEBUG: URL carregada: ${url}\n`, { flag: 'a', encoding: 'utf-8' });
     } catch (e) { }
     const { session } = win.webContents;
     try {
