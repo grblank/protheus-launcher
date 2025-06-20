@@ -26,7 +26,6 @@ O **Protheus Launcher** é uma aplicação desktop desenvolvida em Electron para fa
 
 - `package.json`: Configurações do projeto Node.js/Electron, dependências e scripts de build/start.
 - `protheus_launcher.ini`: Arquivo de configuração INI editável, onde se define a URL do Protheus, programa e ambiente.
-- `quick_launcher.jpg`: Imagem de cabeçalho para o README.
 
 ## Funcionamento
 
@@ -96,3 +95,11 @@ O instalador será gerado na pasta `dist/`.
 - O launcher automatiza a instalação e atualização do Web Agent, essencial para o funcionamento do Protheus Web.
 - O launcher pode ser executado em múltiplas instâncias simultaneamente, cada uma com seu próprio ambiente isolado.
 - Em caso de erro crítico, uma tela de erro será exibida ao usuário.
+
+## Sobre o userDataPath em AppData
+
+Ao iniciar, o Protheus Launcher cria um diretório exclusivo para cada instância em `%APPDATA%\protheus-launcher` (normalmente `C:\Users\SeuUsuario\AppData\Roaming\protheus-launcher`).
+
+Esse diretório é chamado de `userDataPath` e é utilizado para armazenar arquivos temporários e de configuração da instância em execução, como o `protheus_launcher.ini`. O nome do subdiretório inclui um identificador único para cada execução, permitindo que múltiplas instâncias rodem de forma totalmente isolada, sem conflito de dados ou configurações.
+
+Ao fechar o launcher, o diretório da instância é removido automaticamente, mantendo o ambiente do usuário limpo.
