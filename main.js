@@ -4,11 +4,13 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const ini = require('ini');
+const instanceId = process.argv.find(arg => arg.startsWith('--instance=')) || `--instance=${Date.now()}_${Math.floor(Math.random()*10000)}`;
+const customUserDataPath = path.join(app.getPath('appData'), 'protheus-launcher', instanceId.replace('--instance=', ''));
+app.setPath('userData', customUserDataPath);
 
-// Usa o diretório seguro do usuário para arquivos de configuração e log
+// Definir userDataPath único para cada instância
 const userDataPath = app.getPath('userData');
 const iniPath = path.join(userDataPath, 'protheus_launcher.ini');
-const logPath = path.join(userDataPath, 'webagent_launcher.log');
 
 // Função para ler argumentos da linha de comando
 function getArgsFromCommandLine() {
@@ -25,12 +27,33 @@ function getArgsFromCommandLine() {
 }
 
 function readConfig() {
-    function logDebug(msg) {
-        const line = `[${new Date().toISOString()}] DEBUG: ${msg}\n`;
-        try { fs.appendFileSync(logPath, line, { flag: 'a', encoding: 'utf-8' }); } catch (err) { }
+    const cliArgs = getArgsFromCommandLine();
+    // Se algum parâmetro for passado via linha de comando, prioriza eles
+    if (cliArgs.programa && !cliArgs.ambiente) {
+        // Só programa informado
+        return {
+            url: 'https://api.transjoi.com.br:10443/webapp/',
+            programa: cliArgs.programa,
+            ambiente: ''
+        };
+    } else if (!cliArgs.programa && cliArgs.ambiente) {
+        // Só ambiente informado
+        return {
+            url: 'https://api.transjoi.com.br:10443/webapp/',
+            programa: '',
+            ambiente: cliArgs.ambiente
+        };
+    } else if (cliArgs.programa && cliArgs.ambiente) {
+        // Ambos informados
+        return {
+            url: 'https://api.transjoi.com.br:10443/webapp/',
+            programa: cliArgs.programa,
+            ambiente: cliArgs.ambiente
+        };
     }
+    // Se nenhum parâmetro, usa o INI
     if (!fs.existsSync(iniPath)) {
-        logDebug('Arquivo de configuração INI não encontrado, usando padrão.');
+        // Não grava log, apenas retorna padrão
         return {
             url: 'https://api.transjoi.com.br:10443/webapp/',
             programa: 'SIGAMDI',
@@ -39,18 +62,14 @@ function readConfig() {
     }
     try {
         const config = ini.parse(fs.readFileSync(iniPath, 'utf-8'));
-        let resultConfig = {
+        return {
             url: config.Protheus?.url || 'https://api.transjoi.com.br:10443/webapp/',
-            programa: config.Protheus?.programa || '',
-            ambiente: config.Protheus?.ambiente || ''
+            programa: config.Protheus?.programa || 'SIGAMDI',
+            ambiente: config.Protheus?.ambiente || 'producao'
         };
-        // Sobrescreve com argumentos da linha de comando, se existirem
-        const cliArgs = getArgsFromCommandLine();
-        if (cliArgs.programa) resultConfig.programa = cliArgs.programa;
-        if (cliArgs.ambiente) resultConfig.ambiente = cliArgs.ambiente;
-        return resultConfig;
     } catch (e) {
-        logDebug('Erro ao ler arquivo de configuração INI: ' + e.message);
+        // Exibe erro na tela
+        showErrorScreen(BrowserWindow.getAllWindows()[0], 'Erro ao ler arquivo de configuração INI: ' + e.message);
         return {
             url: 'https://api.transjoi.com.br:10443/webapp/',
             programa: 'SIGAMDI',
@@ -59,10 +78,7 @@ function readConfig() {
     }
 }
 
-function writeConfig(config) {
-    const iniContent = ini.stringify({ Protheus: config });
-    fs.writeFileSync(iniPath, iniContent, 'utf-8');
-}
+// Removida a função de escrita do INI e qualquer chamada a writeConfig
 
 function buildUrl(config) {
     let url = config.url;
@@ -201,12 +217,11 @@ function createWindow() {
 }
 
 
-async function checkAndInstallWebAgent() {
+function checkAndInstallWebAgent(win) {
     // Apenas logs de erro serão gravados
     // Busca versão e url do webagent.json remoto
     let agentVersion = '1.0.17';
     let agentDownloadUrl = '';
-    const logPath = path.join(__dirname, 'webagent_launcher.log');
     function logError(msg) {
         const line = `[${new Date().toISOString()}] ERRO: ${msg}\n`;
         try {
@@ -223,22 +238,35 @@ async function checkAndInstallWebAgent() {
     }
     try {
         const https = require('https');
-        const webagentInfo = await new Promise((resolve, reject) => {
-            https.get('https://quickops.transjoi.com.br/quick_public_files/webagent.json', (res) => {
-                let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => {
-                    try {
-                        resolve(JSON.parse(data));
-                    } catch (e) { reject(e); }
-                });
-            }).on('error', reject);
+        let webagentInfo = {};
+        let fetchDone = false;
+        let fetchError = null;
+        https.get('https://quickops.transjoi.com.br/quick_public_files/webagent.json', (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    webagentInfo = JSON.parse(data);
+                } catch (e) { fetchError = e; }
+                fetchDone = true;
+            });
+        }).on('error', (err) => {
+            fetchError = err;
+            fetchDone = true;
         });
+        const start = Date.now();
+        while (!fetchDone && Date.now() - start < 5000) {
+            require('deasync').runLoopOnce();
+        }
+        if (fetchError) {
+            showErrorScreen(win, 'Falha ao buscar webagent.json remoto: ' + fetchError.message);
+            return false;
+        }
         if (webagentInfo.version) agentVersion = webagentInfo.version;
         if (webagentInfo.url) agentDownloadUrl = webagentInfo.url;
     } catch (e) {
-        logError('Falha ao buscar webagent.json remoto: ' + e.message);
-        // Se falhar, mantém valores padrão
+        showErrorScreen(win, 'Falha ao buscar webagent.json remoto: ' + e.message);
+        return false;
     }
     const config = readConfig();
     // Se o JSON remoto trouxe uma URL, usa ela
@@ -249,16 +277,22 @@ async function checkAndInstallWebAgent() {
     // ...
     let needsInstall = false;
     try {
-        await fsPromises.access(agentDir);
-        // Pasta existe, verifica o ini
-        const iniContent = await fsPromises.readFile(agentIni, 'utf-8');
-        if (!iniContent.includes(agentVersion)) {
-            // Versão não encontrada, deleta pasta
-            await fsPromises.rm(agentDir, { recursive: true, force: true });
+        if (fs.existsSync(agentDir)) {
+            // Pasta existe, verifica o ini
+            if (fs.existsSync(agentIni)) {
+                const iniContent = fs.readFileSync(agentIni, 'utf-8');
+                if (!iniContent.includes(agentVersion)) {
+                    // Versão não encontrada, deleta pasta
+                    fs.rmSync(agentDir, { recursive: true, force: true });
+                    needsInstall = true;
+                }
+            } else {
+                needsInstall = true;
+            }
+        } else {
             needsInstall = true;
         }
     } catch (e) {
-        // Pasta não existe
         needsInstall = true;
     }
     if (needsInstall) {
@@ -270,45 +304,91 @@ async function checkAndInstallWebAgent() {
             args = ['/S', '/quiet', '/silent'];
         }
         try {
-            await new Promise((resolve, reject) => {
-                const child = execFile(msiPath, args, (error) => {
-                    if (error) {
-                        logError('Erro ao executar instalação silenciosa: ' + error.message);
-                        reject(error);
-                    } else {
-                        resolve();
-                    }
-                });
-            });
+            require('child_process').execFileSync(msiPath, args);
         } catch (e) {
-            logError('Erro na instalação do Web Agent: ' + e.message);
-            dialog.showMessageBoxSync({
-                type: 'error',
-                title: 'Erro na instalação do Web Agent',
-                message: 'Não foi possível instalar o Web Agent automaticamente. Instale manualmente e tente novamente.'
-            });
-            app.quit();
+            showErrorScreen(win, 'Erro ao executar instalador do Web Agent: ' + e.message + '\nCaminho: ' + msiPath);
             return false;
         }
         // Após a instalação, verifica se está correto
         try {
-            await fsPromises.access(agentDir);
-            const iniContent = await fsPromises.readFile(agentIni, 'utf-8');
-            if (!iniContent.includes(agentVersion)) {
-                throw new Error('Versão incorreta após instalação');
+            if (fs.existsSync(agentDir) && fs.existsSync(agentIni)) {
+                const iniContent = fs.readFileSync(agentIni, 'utf-8');
+                if (!iniContent.includes(agentVersion)) {
+                    showErrorScreen(win, 'Web Agent instalado, mas versão incorreta encontrada no INI. Esperado: ' + agentVersion);
+                    return false;
+                }
+            } else {
+                showErrorScreen(win, 'Diretório ou INI do Web Agent não encontrado após instalação.');
+                return false;
             }
         } catch (e) {
-            logError('Web Agent não foi instalado corretamente: ' + e.message);
-            dialog.showMessageBoxSync({
-                type: 'error',
-                title: 'Web Agent obrigatório',
-                message: 'O Web Agent não foi instalado corretamente. O sistema será fechado.'
-            });
-            app.quit();
+            showErrorScreen(win, 'Web Agent não foi instalado corretamente: ' + e.message);
             return false;
         }
     }
     return true;
+}
+
+function showErrorScreen(win, message) {
+    const errorHtml = `
+    <html><head><style>
+    .quick-loading-overlay-content {
+      background-color: #fff;
+      border-radius: 3px;
+      box-shadow: 0 1px 4px 0 rgba(0, 0, 0, .3);
+      display: block;
+      height: 80%;
+      left: 50%;
+      max-height: 104px;
+      max-width: 300px;
+      position: relative;
+      top: 50%;
+      -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+      width: 100%;
+      overflow-y: hidden;
+    }
+    .quick-overlay-fixed {
+      background-color: rgba(180, 0, 0, .7);
+      content: "";
+      height: 100%;
+      left: 0;
+      top: 0;
+      z-index: 1000;
+      width: 100%;
+      overflow-y: hidden;
+      position: fixed;
+    }
+    .quick-loading-icon {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+    }
+    .quick-loading-label {
+      font-family: NunitoSans, sans-serif;
+      font-size: 14px;
+      line-height: 18px;
+      color: #a00;
+      display: block;
+      margin: 16px 16px 0 16px;
+      text-align: center
+    }
+    </style></head><body>
+    <div class="quick-overlay-fixed">
+      <div class="quick-loading-overlay-content">
+        <div class="quick-loading">
+          <div class="quick-loading-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1"/></svg>
+          </div>
+          <div class="quick-loading-label">${message}</div>
+        </div>
+      </div>
+    </div>
+    </body></html>
+    `;
+    win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(errorHtml));
+    win.show();
 }
 
 app.whenReady().then(async () => {
@@ -324,52 +404,17 @@ ambiente=producao
             fs.writeFileSync(iniPath, defaultConfig.trim());
         }
     } catch (err) {
-        console.error('Erro ao criar protheus_launcher.ini:', err);
-    }
-    // Garante a criação do arquivo de log
-    try {
-        if (!fs.existsSync(logPath)) {
-            fs.writeFileSync(logPath, `[${new Date().toISOString()}] Log criado\n`, { flag: 'a', encoding: 'utf-8' });
-        }
-        fs.appendFileSync(logPath, `[${new Date().toISOString()}] App iniciado\n`, { flag: 'a', encoding: 'utf-8' });
-    } catch (err) {
-        console.error('Erro ao criar webagent_launcher.log:', err);
-    }
-    const win = createWindow();
-    const agentOk = await checkAndInstallWebAgent();
-    if (!agentOk) {
+        showErrorScreen(BrowserWindow.getAllWindows()[0], 'Erro ao criar protheus_launcher.ini: ' + err.message);
         return;
     }
-    // Limpa cookies, dados de sessão e service workers da URL
-    const config = readConfig();
-    const url = buildUrl(config);
-    // Loga a URL final que será carregada
-    try {
-        const logPath = path.join(__dirname, 'webagent_launcher.log');
-        fs.appendFileSync(logPath, `[${new Date().toISOString()}] DEBUG: URL carregada: ${url}\n`, { flag: 'a', encoding: 'utf-8' });
-    } catch (e) { }
-    const { session } = win.webContents;
-    try {
-        // Limpa cookies
-        const parsedUrl = new URL(url);
-        const domain = parsedUrl.hostname;
-        const cookies = await session.cookies.get({ domain });
-        for (const cookie of cookies) {
-            await session.cookies.remove(parsedUrl.origin, cookie.name);
-        }
-        // Limpa dados de sessão (localStorage, indexedDB, cache, etc)
-        await session.clearStorageData({ origin: parsedUrl.origin });
-        // Remove service workers
-        await session.clearStorageData({ origin: parsedUrl.origin, storages: ['serviceworkers'] });
-    } catch (e) {
-        console.error('Erro ao limpar dados da sessão:', e);
-    }
-    // Tenta iniciar o web-agent.exe apenas se não estiver em execução
+    const win = createWindow();
+    // Passo 2: Só valida/instala o Web Agent se ele não estiver rodando
+    let agentOk = true;
+    let agentAlreadyRunning = false;
     try {
         const userProfile = process.env.USERPROFILE || process.env.HOME;
         const agentExe = path.join(userProfile, 'AppData', 'Local', 'Programs', 'web-agent', 'web-agent.exe');
         if (fs.existsSync(agentExe)) {
-            // Verifica se já existe um processo web-agent.exe rodando
             const { execSync } = require('child_process');
             let isRunning = false;
             try {
@@ -379,37 +424,70 @@ ambiente=producao
                 // Se der erro, assume que não está rodando
             }
             if (!isRunning) {
+                agentOk = await checkAndInstallWebAgent(win);
+                if (!agentOk) return;
+                // Inicia o Web Agent
                 execFile(agentExe, (error) => {
                     if (error) {
-                        console.error('Erro ao iniciar web-agent.exe:', error);
+                        showErrorScreen(win, 'Erro ao iniciar web-agent.exe: ' + error.message);
                     }
                 });
+            } else {
+                agentAlreadyRunning = true;
             }
         } else {
-            dialog.showMessageBoxSync({
-                type: 'error',
-                title: 'Web Agent não encontrado',
-                message: 'O Web Agent não foi encontrado após a instalação. O sistema será fechado.'
-            });
-            app.quit();
-            return;
+            agentOk = await checkAndInstallWebAgent(win);
+            if (!agentOk) return;
         }
     } catch (e) {
-        dialog.showMessageBoxSync({
-            type: 'error',
-            title: 'Erro ao iniciar Web Agent',
-            message: 'Não foi possível iniciar o Web Agent. O sistema será fechado.'
-        });
+        showErrorScreen(win, 'Não foi possível iniciar o Web Agent. O sistema será fechado.');
         app.quit();
         return;
     }
-    // Após finalizar, carrega a página real
-    win.loadURL(url);
+    // Passo 3: Só mostra loading enquanto realmente está carregando
+    if (agentAlreadyRunning) {
+        // Se já está rodando, carrega direto a página real
+        const config = readConfig();
+        const url = buildUrl(config);
+        win.once('ready-to-show', () => {
+            win.show();
+        });
+        win.loadURL(url);
+    } else {
+        // Limpa cookies, dados de sessão e service workers da URL
+        const config = readConfig();
+        const url = buildUrl(config);
+        // Loga a URL final que será carregada
+        try {
+            const logPath = path.join(userDataPath, 'webagent_launcher.log');
+            fs.appendFileSync(logPath, `[${new Date().toISOString()}] DEBUG: URL carregada: ${url}\n`, { flag: 'a', encoding: 'utf-8' });
+        } catch (e) { }
+        const { session } = win.webContents;
+        try {
+            // Limpa cookies
+            const parsedUrl = new URL(url);
+            const domain = parsedUrl.hostname;
+            //const cookies = await session.cookies.get({ domain });
+            //for (const cookie of cookies) {
+            //    await session.cookies.remove(parsedUrl.origin, cookie.name);
+            //}
+            // Limpa dados de sessão (localStorage, indexedDB, cache, etc)
+            //await session.clearStorageData({ origin: parsedUrl.origin });
+            // Remove service workers
+            //await session.clearStorageData({ origin: parsedUrl.origin, storages: ['serviceworkers'] });
+        } catch (e) {
+            console.error('Erro ao limpar dados da sessão:', e);
+        }
+        win.loadURL(url);
+    }
     app.on('activate', function () {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
 });
 
 app.on('window-all-closed', function () {
+    try {
+        fs.rmSync(customUserDataPath, { recursive: true, force: true });
+    } catch (e) { /* ignora erro */ }
     if (process.platform !== 'darwin') app.quit();
 });

@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "deasync": "^0.1.30",
     "ini": "^4.1.1"
   },
   "devDependencies": {
@@ -23,8 +24,17 @@
     "appId": "com.suaempresa.protheuslauncher",
     "productName": "Protheus Launcher",
     "files": [
-      "**/*"
+      "main.js",
+      "package.json",
+      "protheus.png",
+      "quick_launcher.jpg",
+      "quick-loading.gif",
+      "quick-loading.svg",
+      "quick.jpg",
+      "readme.md"
     ],
+    "asar": true,
+    "compression": "maximum",
     "win": {
       "icon": "protheus.png",
       "target": [
